@@ -1,9 +1,11 @@
+import example.shaomai.buildsrc.MyPlugin
+
 apply plugin: 'com.android.application'
 
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
-apply plugin: example.shaomai.buildsrc.MyPlugin
+apply plugin: MyPlugin
 
 android {
     compileSdkVersion 29

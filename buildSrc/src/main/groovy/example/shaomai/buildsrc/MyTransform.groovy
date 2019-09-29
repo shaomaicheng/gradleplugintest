@@ -2,6 +2,7 @@ package example.shaomai.buildsrc
 
 import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
+import com.android.utils.FileUtils
 import org.gradle.api.Project
 
 class MyTransform extends Transform {
@@ -47,8 +48,18 @@ class MyTransform extends Transform {
         inputs.each {
             it.directoryInputs.each {
                 injectPools.inject(it.getFile().absolutePath)
+                File dest = outputProvider.getContentLocation(
+                        it.getName(), it.getContentTypes(), it.getScopes(), Format.DIRECTORY
+                )
+                println 'file->'+dest.absolutePath
+                FileUtils.copyDirectory(it.getFile(), dest)
             }
             it.jarInputs.each {
+                File dest = outputProvider.getContentLocation(
+                        it.getFile().getAbsolutePath(), it.getContentTypes(), it.getScopes(), Format.JAR
+                )
+                println 'jar->'+dest.absolutePath
+                FileUtils.copyFile(it.getFile(), dest)
             }
         }
         injectPools = null

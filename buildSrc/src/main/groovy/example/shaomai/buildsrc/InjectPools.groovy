@@ -37,7 +37,7 @@ class InjectPools {
                 if (f.absolutePath.endsWith(".class")) {
 //                    println f.absolutePath
                     def stufix = ".class".length()
-                    def paths = f.absolutePath.substring(0, f.absolutePath.length()-stufix).split("/")
+                    def paths = f.absolutePath.substring(0, f.absolutePath.length() - stufix).split("/")
                     def index = 0
                     if (paths.contains("classes")) {
                         index = paths.findIndexOf {
@@ -50,41 +50,55 @@ class InjectPools {
                         index++
                     }
                     def className = ''
-                    for (int i = index+1;i < paths.size();i++){
+                    for (int i = index + 1; i < paths.size(); i++) {
                         if (i != paths.size() - 1) {
                             className += paths[i] + "."
-                        } else  {
+                        } else {
                             className += paths[i]
                         }
                     }
 
-                    println className
+//                    println className
 
-                    CtClass ctClass = pool.getCtClass(className)
-                    if (ctClass.isFrozen()) {
-                        ctClass.defrost()
-                    }
-                    ctClass.declaredMethods.each {
-                        def ctMethod = it
-                        println ctMethod.name
-                        if (ctMethod != null) {
-                            ctMethod.addLocalVariable("begin", CtClass.longType)
-                            String insetBeforeStr = """ begin = System.currentTimeMillis();
+                    if (className.startsWith("example.shaomai")) {
+                        CtClass ctClass = pool.getCtClass(className)
+                        if (ctClass.isFrozen()) {
+                            ctClass.defrost()
+                        }
+                        ctClass.declaredMethods.each {
+                            def ctMethod = it
+//                        println ctMethod.name
+                            if (ctMethod != null) {
+                                def classSimpleName = className
+                                def methodName = ctMethod.name
+                                def completeClassMethodName = classSimpleName + '#' + methodName
+                                println completeClassMethodName
+
+                                ctMethod.addLocalVariable("begin", CtClass.longType)
+                                String insetBeforeStr = """ 
+                                    begin = System.currentTimeMillis();
+                        android.util.Log.e("${completeClassMethodName}开始时间", String.valueOf(begin));
                                             """
-                            ctMethod.insertBefore(insetBeforeStr)
-                            String insertAfterStr = """
 
+                                ctMethod.insertBefore(insetBeforeStr)
+
+
+                                String insertAfterStr = """
                             long end = System.currentTimeMillis();
-                           android.util.Log.e("耗时", String.valueOf(end-begin));
-                    """
-                            ctMethod.insertAfter(insertAfterStr)
-                            ctClass.writeFile(path)
-                            if (ctClass.isFrozen()) {
-                                ctClass.defrost()
+                            android.util.Log.e("${completeClassMethodName}结束时间", String.valueOf(end));
+                           android.util.Log.e("${completeClassMethodName}耗时", String.valueOf(end-begin));
+                            """
+
+                                ctMethod.insertAfter(insertAfterStr)
+                                ctClass.writeFile(path)
+                                if (ctClass.isFrozen()) {
+                                    ctClass.defrost()
+                                }
                             }
                         }
+                        ctClass.detach()
                     }
-                    ctClass.detach()
+
                 }
             }
         }
