@@ -1,48 +1,93 @@
 package example.shaomai.buildsrc
 
+import com.android.build.api.transform.TransformInput
 import javassist.ClassPool
 import javassist.CtClass
-import javassist.CtMethod
 import org.gradle.api.Project
 
 class InjectPools {
     //初始化类池
-    private final static ClassPool pool = ClassPool.getDefault();
+    private ClassPool pool = ClassPool.getDefault()
 
-    public static void inject(String path, Project project) {
-        pool.appendClassPath(path)
-        pool.appendClassPath(project.android.bootClasspath[0].toString())
-        pool.importPackage("android.os.Bundle");
+    void appendAllClasses(Collection<TransformInput> inputs, Project project) {
+        pool.appendClassPath("androidx.appcompat.app.AppCompatActivity")
+        pool.appendClassPath('android.os.Bundle')
+        project.android.bootClasspath.each {
+            println '添加路径：' + it.absolutePath
+            pool.appendClassPath((String) it.absolutePath)
+        }
+        inputs.each {
+            it.directoryInputs.each {
+                def dirPath = it.file.absolutePath
+                pool.appendClassPath(dirPath)
+            }
+            it.jarInputs.each {
+                pool.appendClassPath(it.file.absolutePath)
+            }
+        }
+    }
+
+    void inject(String path) {
 
         File file = new File(path)
 
-        if (file.isDirectory()){
-            file.eachFileRecurse {File f ->
-                if (f.getName().equals("MainActivity.class")) {
-                    println f.absolutePath
 
-                    CtClass ctClass = pool.getCtClass("example.shaomai.wuhengtest.Add");
+        if (file.isDirectory()) {
+            file.eachFileRecurse { File f ->
+                if (f.absolutePath.endsWith(".class")) {
+//                    println f.absolutePath
+                    def stufix = ".class".length()
+                    def paths = f.absolutePath.substring(0, f.absolutePath.length()-stufix).split("/")
+                    def index = 0
+                    if (paths.contains("classes")) {
+                        index = paths.findIndexOf {
+                            (it == "classes")
+                        }
+                    } else {
+                        index = paths.findIndexOf {
+                            it == 'kotlin-classes'
+                        }
+                        index++
+                    }
+                    def className = ''
+                    for (int i = index+1;i < paths.size();i++){
+                        if (i != paths.size() - 1) {
+                            className += paths[i] + "."
+                        } else  {
+                            className += paths[i]
+                        }
+                    }
+
+                    println className
+
+                    CtClass ctClass = pool.getCtClass(className)
                     if (ctClass.isFrozen()) {
                         ctClass.defrost()
                     }
-                    CtMethod ctMethod = ctClass.getDeclaredMethod("add")
-                    String insetBeforeStr = """ System.out.println("我是被插入的代码");
+                    ctClass.declaredMethods.each {
+                        def ctMethod = it
+                        println ctMethod.name
+                        if (ctMethod != null) {
+                            ctMethod.addLocalVariable("begin", CtClass.longType)
+                            String insetBeforeStr = """ begin = System.currentTimeMillis();
                                             """
-                    ctMethod.insertBefore(insetBeforeStr)
-                    ctClass.writeFile(path)
+                            ctMethod.insertBefore(insetBeforeStr)
+                            String insertAfterStr = """
+
+                            long end = System.currentTimeMillis();
+                           android.util.Log.e("耗时", String.valueOf(end-begin));
+                    """
+                            ctMethod.insertAfter(insertAfterStr)
+                            ctClass.writeFile(path)
+                            if (ctClass.isFrozen()) {
+                                ctClass.defrost()
+                            }
+                        }
+                    }
                     ctClass.detach()
-//                    CtClass ctClass = pool.getCtClass("example.shaomai.wuhengtest.MainActviity")
-//                    if (ctClass.isFrozen()) {
-//                        ctClass.defrost()
-//                    }
-//                    CtMethod ctMethod = ctClass.getDeclaredMethod("onCreate")
-//                    String insetBeforeStr = """ android.widget.Toast.makeText(this,"WTF emmmmmmm.....我是被插入的Toast代码~!!",android.widget.Toast.LENGTH_LONG).show();
-//                                            """
-//                    ctMethod.insertBefore(insetBeforeStr)
-//                    ctClass.writeFile(path)
-//                    ctClass.detach()
                 }
             }
         }
+
     }
 }
