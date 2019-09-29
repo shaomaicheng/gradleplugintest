@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+apply plugin: 'groovy'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'com.android.tools.build:gradle:3.4.2'
+    // https://mvnrepository.com/artifact/org.javassist/javassist
+    implementation group: 'org.javassist', name: 'javassist', version: '3.25.0-GA'
+
+}
+
+repositories {
+    jcenter()
+    google()
+}
+
+sourceCompatibility = "7"
+targetCompatibility = "7"
