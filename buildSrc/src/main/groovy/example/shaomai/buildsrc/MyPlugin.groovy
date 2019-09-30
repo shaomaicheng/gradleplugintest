@@ -9,7 +9,8 @@ public class MyPlugin implements Plugin<Project> {
     public void apply(Project project) {
         System.out.println("===========注册transform==========");
         AppExtension android = project.getExtensions().getByType(AppExtension.class);
-        android.registerTransform(new MyTransform(project));
+        android.registerTransform(new MyTransform(project))
+        android.registerTransform(new AsmTransform(project))
         System.out.println("===========结束注册==========");
     }
 
