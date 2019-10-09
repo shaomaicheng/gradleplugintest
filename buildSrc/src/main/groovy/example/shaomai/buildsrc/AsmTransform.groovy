@@ -4,6 +4,9 @@ import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.utils.FileUtils
 import org.gradle.api.Project
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
 
 class AsmTransform extends  Transform {
 
@@ -38,9 +41,27 @@ class AsmTransform extends  Transform {
         println '==========进去第二个transform=========='
         inputs.each {
             it.directoryInputs.each {
-                println "第二个transform里面的class文件路径: ${it.file.absolutePath}"  // 应该是 build文件夹下面 MyTransform 的输出目录
+                println "第二个transform里NeacyRouterWriter面的class文件路径: ${it.file.absolutePath}"  // 应该是 build文件夹下面 MyTransform 的输出目录
+
+                it.file.eachFileRecurse {file ->
+                    def  name = file.name
+                    if (name.endsWith('.class')) {
+                        ClassReader classReader = new ClassReader(file.bytes)
+                        ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                        ClassVisitor cv = new AddTryCatchClassAdapter(classWriter)
+                        classReader.accept(cv, ClassReader.EXPAND_FRAMES)
+                        byte[] code = classWriter.toByteArray()
+                        FileOutputStream fos = new FileOutputStream(
+                                file.parentFile.absolutePath + File.separator + name
+                        )
+                        fos.write(code)
+                        fos.close()
+                    }
+                }
+
                 def dist = outputProvider.getContentLocation(it.name, it.contentTypes, it.scopes, Format.DIRECTORY)
                 FileUtils.copyDirectory(it.getFile(), dist)
+
             }
             it.jarInputs.each {
                 println "第二个transform里面的jar文件路径：${it.file.absolutePath}"
