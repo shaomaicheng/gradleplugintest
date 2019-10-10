@@ -3,7 +3,6 @@ package example.shaomai.buildsrc
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.commons.AdviceAdapter
-import sun.security.krb5.Config
 
 class AddTryCatchAdviceAdapter extends  AdviceAdapter {
 
@@ -31,26 +30,19 @@ class AddTryCatchAdviceAdapter extends  AdviceAdapter {
         mv.visitJumpInsn(GOTO, l3)
         mv.visitLabel(l2)
         mv.visitVarInsn(ASTORE, 1)
-        if (exceptionHandleClass != null && exceptionHandleMethod != null) {
-            mv.visitVarInsn(ALOAD, 1)
-            mv.visitMethodInsn(INVOKESTATIC, exceptionHandleClass, exceptionHandleMethod, "(Ljava/lang/Exception;)V", false)
-
-        }
+        println "exceptionHandleClass: ${exceptionHandleClass}; exceptionHandleMethod: ${exceptionHandleMethod}"
+//        if (exceptionHandleClass != null && exceptionHandleMethod != null) {
+//            mv.visitVarInsn(ALOAD, 1)
+//            mv.visitMethodInsn(INVOKESTATIC, exceptionHandleClass, exceptionHandleMethod, "(Ljava/lang/Exception;)V", false)
+//
+//        }
         mv.visitLabel(l3)
     }
 
-    protected AddTryCatchAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc) {
+    protected AddTryCatchAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc, String className) {
         super(api, mv, access, name, desc)
-
-        Map<String, String> exceptionHandler = new HashMap<>()
-        if (exceptionHandler != null && !exceptionHandler.isEmpty()) {
-            exceptionHandler.entrySet().forEach({ entry ->
-                exceptionHandleClass = entry.getKey().replace(".", "/")
-                exceptionHandleMethod = entry.getValue()
-            })
-        }
-
-
+        exceptionHandleMethod = name
+        exceptionHandleClass = className
     }
 
 }
